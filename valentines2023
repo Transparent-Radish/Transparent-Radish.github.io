@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="valentines2023Script.js"></script>
+  </head>
+<body onload="initializeCanvas()">
+  
+
+  <button onclick="startAnimation()">cycle through spheres</button>  
+  
+  <button onclick="endAnimation()">stop</button>  
+<br>
+  <canvas id="canvas" width="1280" height="720">
+  
+
+</body>
+
+</html>
