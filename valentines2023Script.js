@@ -3,17 +3,17 @@ var ctx;
 var WIDTH;
 var HEIGHT;
 var focalLen =  500
-var heartQuality = 20;
+var heartQuality = 26;
 var heartScale = 80;
 var M_PI = Math.PI, M_PI_2 = Math.PI/2.0;
 var frame,zBuffer;
 var animationID;
 var heartAngle = [0,0,0]
-var HEART;
+var HEART, heartTransform, heartLighting;
 
 var acos23 = Math.acos(2.0/3.0);
 
-//may god have mercy on your soul if you look at this code
+
 
 function initializeCanvas() {
 canvas = document.getElementById("canvas");
@@ -28,7 +28,20 @@ HEIGHT = canvas.height;
       zBuffer[j][i]=9999999999999999;
     }
   }
-HEART = heartTriangles();
+
+  HEART = heartTriangles();
+
+  heartTransform = {
+  	position: [0,0,0],
+	angle: [0,0,0],
+	scale: heartScale
+  }
+
+  heartLighting = {
+	ambient: 0.5,
+	lambertian: [2,2,1.6],
+	direction: [0.218217890236,-0.872871560944,0.436435780472],
+  };
   twoSpheresTest();
   
 }
@@ -41,9 +54,9 @@ function clearFrame(){
   }
   
   for(var i=0;i<frame.data.length;i+=4){
-    frame.data[i  ]=0;
-    frame.data[i+1]=0;
-    frame.data[i+2]=0;
+    frame.data[i  ]=255;
+    frame.data[i+1]=255;
+    frame.data[i+2]=180;
     frame.data[i+3]=255;
   }
   ctx.putImageData(frame,0,0);
@@ -69,14 +82,16 @@ function twoSpheresTest(){
   frame = ctx.getImageData(0,0,WIDTH,HEIGHT); 
   
   
-  var r = 254;
-  var g = 111;
-  var b = 232;
+  var r = 150;
+  var g = 50;
+  var b = 100;
   
   clearFrame();
   
+  
+	
   for(var i=0;i<HEART.length;i++){
-      addTriangle(HEART[i], heartAngle,[r,g,b],{ambient:0.1,intensity:1,direction:[0.218217890236,-0.872871560944,0.436435780472]})
+      addTriangle(HEART[i], heartTransform,[r,g,b],heartLighting)
   }
   
 
@@ -84,18 +99,25 @@ function twoSpheresTest(){
 	
   //heartAngle[0]+=0.1;
   //heartAngle[1]+=0.1;
-  heartAngle[2]+=0.1;
+  
+  heartTransform.angle[2]+=0.1;
+  heartTransform.position[0] = 2*heartTransform.scale*Math.sin(heartTransform.angle[2]);
+  heartTransform.scale = heartScale*(3+Math.cos(heartTransform.angle[2]/3))/4;
+
 }
+
+
+
 
 function heartTriangles(){
   //add domes on top
-  var heart = sphereTriangles(heartScale,0,0,heartScale,0,M_PI*2,0,M_PI/2);
-  heart = heart.concat(sphereTriangles(-heartScale,0,0,heartScale,0,M_PI*2,0,M_PI/2));
+  var heart = sphereTriangles(1,0,0,1,0,M_PI*2,0,M_PI/2);
+  heart = heart.concat(sphereTriangles(-1,0,0,1,0,M_PI*2,0,M_PI/2));
   
   //add one side
-  var heartSide = torusTriangles(2*heartScale,0,0,3*heartScale,heartScale,M_PI,M_PI+acos23-M_PI/heartQuality,3*M_PI/2,5*M_PI/2);
+  var heartSide = torusTriangles(2,0,0,3,1,M_PI,M_PI+acos23-M_PI/heartQuality,3*M_PI/2,5*M_PI/2);
   //mirror it and add the other
-  var otherSide = torusTriangles(2*heartScale,0,0,3*heartScale,heartScale,M_PI,M_PI+acos23-M_PI/heartQuality,3*M_PI/2,5*M_PI/2);
+  var otherSide = torusTriangles(2,0,0,3,1,M_PI,M_PI+acos23-M_PI/heartQuality,3*M_PI/2,5*M_PI/2);
   for(var i=0;i<otherSide.length;i++){
     for(var j=0;j<3;j++){
       otherSide[i][j][0] = -otherSide[i][j][0];
@@ -109,11 +131,11 @@ function heartTriangles(){
   heart = heart.concat(heartSide);
   
   //add the smooth part connecting the domes
-  heart = heart.concat(torusTriangles(0,0,0,heartScale,heartScale,M_PI,2*M_PI,M_PI/2,3*M_PI/2));
+  heart = heart.concat(torusTriangles(0,0,0,1,1,M_PI,2*M_PI,M_PI/2,3*M_PI/2));
   
   //draw the bottom part of the heart
-  heart = heart.concat(bottomCapTriangles(2*heartScale,0,0,3*heartScale,heartScale,Math.floor(acos23*heartQuality/M_PI)*M_PI/heartQuality+M_PI,0,0,-Math.sqrt(5)*heartScale));  
-  var cap = bottomCapTriangles(2*heartScale,0,0,3*heartScale,heartScale,Math.floor(acos23*heartQuality/M_PI)*M_PI/heartQuality+M_PI,0,0,-Math.sqrt(5)*heartScale)  
+  heart = heart.concat(bottomCapTriangles(2,0,0,3,1,Math.floor(acos23*heartQuality/M_PI)*M_PI/heartQuality+M_PI,0,0,-Math.sqrt(5)));  
+  var cap = bottomCapTriangles(2,0,0,3,1,Math.floor(acos23*heartQuality/M_PI)*M_PI/heartQuality+M_PI,0,0,-Math.sqrt(5))  
 
 
   for(var i=0;i<cap.length;i++){
@@ -139,68 +161,68 @@ var a,b
   	a = M_PI+i*(acos23-increment)/heartQuality;
 	b = M_PI+i*increment/2;
 	flatPart.push([
-		[2*heartScale+3*heartScale*Math.cos(a),heartScale,3*heartScale*Math.sin(a)],
-		[heartScale*Math.cos(b),heartScale,heartScale*Math.sin(b)],
-		[2*heartScale+3*heartScale*Math.cos(a+increment),heartScale,3*heartScale*Math.sin(a+increment)]
+		[2+3*Math.cos(a),1,3*Math.sin(a)],
+		[Math.cos(b),1,Math.sin(b)],
+		[2+3*Math.cos(a+increment),1,3*Math.sin(a+increment)]
 	]);
 	flatPart.push([
-		[heartScale*Math.cos(b),heartScale,heartScale*Math.sin(b)],	
-		[heartScale*Math.cos(b+increment),heartScale,heartScale*Math.sin(b+increment)],	
-		[2*heartScale+3*heartScale*Math.cos(a+increment),heartScale,3*heartScale*Math.sin(a+increment)],
+		[Math.cos(b),1,Math.sin(b)],	
+		[Math.cos(b+increment),1,Math.sin(b+increment)],	
+		[2+3*Math.cos(a+increment),1,3*Math.sin(a+increment)],
 	]);
 	flatPart.push([
-		[2*heartScale+3*heartScale*Math.cos(a+increment),-heartScale,3*heartScale*Math.sin(a+increment)],		
-		[heartScale*Math.cos(b),-heartScale,heartScale*Math.sin(b)],		
-		[2*heartScale+3*heartScale*Math.cos(a),-heartScale,3*heartScale*Math.sin(a)]
+		[2+3*Math.cos(a+increment),-1,3*Math.sin(a+increment)],		
+		[Math.cos(b),-1,Math.sin(b)],		
+		[2+3*Math.cos(a),-1,3*Math.sin(a)]
 	]);
 	flatPart.push([
-		[2*heartScale+3*heartScale*Math.cos(a+increment),-heartScale,3*heartScale*Math.sin(a+increment)],
-		[heartScale*Math.cos(b+increment),-heartScale,heartScale*Math.sin(b+increment)],
-		[heartScale*Math.cos(b),-heartScale,heartScale*Math.sin(b)],	
+		[2+3*Math.cos(a+increment),-1,3*Math.sin(a+increment)],
+		[Math.cos(b+increment),-1,Math.sin(b+increment)],
+		[Math.cos(b),-1,Math.sin(b)],	
 					
 	]);
 
 	flatPart.push([
-		[-2*heartScale-3*heartScale*Math.cos(a),-heartScale,3*heartScale*Math.sin(a)],
-		[-heartScale*Math.cos(b),-heartScale,heartScale*Math.sin(b)],
-		[-2*heartScale-3*heartScale*Math.cos(a+increment),-heartScale,3*heartScale*Math.sin(a+increment)]
+		[-2-3*Math.cos(a),-1,3*Math.sin(a)],
+		[-Math.cos(b),-1,Math.sin(b)],
+		[-2-3*Math.cos(a+increment),-1,3*Math.sin(a+increment)]
 	]);
 	flatPart.push([
-		[-heartScale*Math.cos(b),-heartScale,heartScale*Math.sin(b)],	
-		[-heartScale*Math.cos(b+increment),-heartScale,heartScale*Math.sin(b+increment)],	
-		[-2*heartScale-3*heartScale*Math.cos(a+increment),-heartScale,3*heartScale*Math.sin(a+increment)],
+		[-Math.cos(b),-1,Math.sin(b)],	
+		[-Math.cos(b+increment),-1,Math.sin(b+increment)],	
+		[-2-3*Math.cos(a+increment),-1,3*Math.sin(a+increment)],
 	]);
 	flatPart.push([
-		[-2*heartScale-3*heartScale*Math.cos(a+increment),heartScale,3*heartScale*Math.sin(a+increment)],		
-		[-heartScale*Math.cos(b),heartScale,heartScale*Math.sin(b)],		
-		[-2*heartScale-3*heartScale*Math.cos(a),heartScale,3*heartScale*Math.sin(a)]
+		[-2-3*Math.cos(a+increment),1,3*Math.sin(a+increment)],		
+		[-Math.cos(b),1,Math.sin(b)],		
+		[-2-3*Math.cos(a),1,3*Math.sin(a)]
 	]);
 	flatPart.push([
-		[-2*heartScale-3*heartScale*Math.cos(a+increment),heartScale,3*heartScale*Math.sin(a+increment)],
-		[-heartScale*Math.cos(b+increment),heartScale,heartScale*Math.sin(b+increment)],
-		[-heartScale*Math.cos(b),heartScale,heartScale*Math.sin(b)],	
+		[-2-3*Math.cos(a+increment),1,3*Math.sin(a+increment)],
+		[-Math.cos(b+increment),1,Math.sin(b+increment)],
+		[-Math.cos(b),1,Math.sin(b)],	
 					
 	]);
   }
   flatPart.push([
-		[2*heartScale+3*heartScale*Math.cos(a),heartScale,3*heartScale*Math.sin(a)],
-		[0,heartScale,-heartScale],
-		[0,heartScale,-heartScale*Math.sqrt(5)]
+		[2+3*Math.cos(a),1,3*Math.sin(a)],
+		[0,1,-1],
+		[0,1,-Math.sqrt(5)]
 	]);
   flatPart.push([
-		[2*heartScale+3*heartScale*Math.cos(a),-heartScale,3*heartScale*Math.sin(a)],
-		[0,-heartScale,-heartScale*Math.sqrt(5)],
-		[0,-heartScale,-heartScale],
+		[2+3*Math.cos(a),-1,3*Math.sin(a)],
+		[0,-1,-Math.sqrt(5)],
+		[0,-1,-1],
 	]);
   flatPart.push([
-		[-2*heartScale-3*heartScale*Math.cos(a),-heartScale,3*heartScale*Math.sin(a)],
-		[0,-heartScale,-heartScale],
-		[0,-heartScale,-heartScale*Math.sqrt(5)]
+		[-2-3*Math.cos(a),-1,3*Math.sin(a)],
+		[0,-1,-1],
+		[0,-1,-Math.sqrt(5)]
 	]);
   flatPart.push([
-		[-2*heartScale-3*heartScale*Math.cos(a),heartScale,3*heartScale*Math.sin(a)],
-		[0,heartScale,-heartScale*Math.sqrt(5)],
-		[0,heartScale,-heartScale],
+		[-2-3*Math.cos(a),1,3*Math.sin(a)],
+		[0,1,-Math.sqrt(5)],
+		[0,1,-1],
 	]);
   
   heart = heart.concat(flatPart);
@@ -410,16 +432,33 @@ function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
 }
 //adds a triangle to the frame
-function addTriangle(triangle,objAngle, color, lighting){
+function addTriangle(triangle, transformation, color, lighting){
 
-    triCopy = [triangle[0],triangle[1],triangle[2]]  
 
-    //rotate triangles
-    triCopy[0] = rotate(triCopy[0],objAngle);
-    triCopy[1] = rotate(triCopy[1],objAngle);
-    triCopy[2] = rotate(triCopy[2],objAngle);
-  
-  
+
+var triCopy= triangle.slice()
+
+
+    
+    for(var i=0;i<3;i++){
+
+	//rotate triangles
+        triCopy[i] = rotate(triCopy[i],transformation.angle);
+
+	for(var j=0;j<3;j++){
+		
+		//scale triangles
+		triCopy[i][j] *= transformation.scale;
+
+		//translate triangles
+		triCopy[i][j] -= transformation.position[j];
+	    
+	}
+    }
+    
+
+    
+
     var x1 = triCopy[0][0],y1 = triCopy[0][1],z1 = triCopy[0][2];
     var x2 = triCopy[1][0],y2 = triCopy[1][1],z2 = triCopy[1][2];
     var x3 = triCopy[2][0],y3 = triCopy[2][1],z3 = triCopy[2][2];
@@ -434,9 +473,9 @@ function addTriangle(triangle,objAngle, color, lighting){
 	crossX/=len; crossY/=len; crossZ/=len; 
   
     var dotProd = (crossX*lighting.direction[0]+crossY*lighting.direction[1]+crossZ*lighting.direction[2]);
-	color[0] = Math.floor(clamp((lighting.ambient + (lighting.intensity * dotProd)) * color[0],0,255));
-	color[1] = Math.floor(clamp((lighting.ambient + (lighting.intensity * dotProd)) * color[1],0,255));
-	color[2] = Math.floor(clamp((lighting.ambient + (lighting.intensity * dotProd)) * color[2],0,255));
+	color[0] = Math.floor(clamp((lighting.ambient + (lighting.lambertian[0] * dotProd)) * color[0],0,255));
+	color[1] = Math.floor(clamp((lighting.ambient + (lighting.lambertian[1] * dotProd)) * color[1],0,255));
+	color[2] = Math.floor(clamp((lighting.ambient + (lighting.lambertian[2] * dotProd)) * color[2],0,255));
     
   
   
