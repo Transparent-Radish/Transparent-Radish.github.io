@@ -513,7 +513,6 @@ var triCopy= triangle.slice()
 				
 				
 
-
 				//update zbuffer
 				zBuffer[y][x] = l1*z1 + l2*z2 + l3*z3;
               
