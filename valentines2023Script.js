@@ -2,16 +2,21 @@ var canvas;
 var ctx;
 var WIDTH;
 var HEIGHT;
-var focalLen =  500
+var focalLen =  1000
 var heartQuality = 26;
-var heartScale = 80;
+var heartScale = 100;
 var M_PI = Math.PI, M_PI_2 = Math.PI/2.0;
 var frame,zBuffer;
 var animationID;
 var heartAngle = [0,0,0]
 var HEART, heartTransform, heartLighting;
+var LUKE, lukeTransform, lukeLighting;
+var WHITNEY, whitneyTransform, whitneyLighting;
 
 var acos23 = Math.acos(2.0/3.0);
+
+
+
 
 
 
@@ -29,19 +34,94 @@ HEIGHT = canvas.height;
     }
   }
 
+  //get all the settings for the heart
+
   HEART = heartTriangles();
 
   heartTransform = {
-  	position: [0,0,0],
+  	position: [0,heartScale,0],
 	angle: [0,0,0],
 	scale: heartScale
   }
 
   heartLighting = {
-	ambient: 0.5,
-	lambertian: [2,2,1.6],
+	ambient: 2,
+	lambertian: [2,2,0],
 	direction: [0.218217890236,-0.872871560944,0.436435780472],
   };
+
+ 
+  // don't mind me, I may or may not have painstakingly made triangle meshes for the capital L and W by hand
+
+  
+  
+	
+  var vertices_W = [
+			[-5,2,4],[-3,2,4],[-2,2,0],[-1,2,4],[1,2,4],[2,2,0],[3,2,4],[5,2,4],
+			[3,2,-4],[1,2,-4],[0,2,0],[-1,2,-4],[-3,2,-4],
+			[-5,-2,4],[-3,-2,4],[-2,-2,0],[-1,-2,4],[1,-2,4],[2,-2,0],[3,-2,4],[5,-2,4],
+			[3,-2,-4],[1,-2,-4],[0,-2,0],[-1,-2,-4],[-3,-2,-4]
+		]
+
+  //start with the front face
+  var triCon_W = [[2,1,0],[2,0,12],[2,12,11],[11,10,2],[10,3,2],[10,4,3],[10,5,4],[9,5,10],[8,5,9],[8,7,5],[5,7,6]];
+
+  //add the back face
+  var tempLenW = triCon_W.length;
+  for(var i=0;i<tempLenW;i++){
+  	triCon_W.push([triCon_W[i][0]+13,triCon_W[i][2]+13,triCon_W[i][1]+13]);
+  }
+
+  //add the side faces
+  triCon_W = triCon_W.concat([
+				[0,1,13],[1,14,13],[2,15,1],[15,14,1],[2,3,15],[15,3,16],[3,4,17],[3,17,16],
+			      	[4,18,17],[5,18,4],[5,6,18],[18,6,19],[6,20,19],[6,7,20],[7,8,20],[21,20,8],[8,20,18],
+				[22,21,8],[22,8,9],[22,9,23],[23,9,10],[23,10,11],[23,11,24],[24,11,12],[24,12,15],[25,12,13],[12,0,13]
+			]);
+
+  WHITNEY = getTrianglesFromMesh(vertices_W,triCon_W);
+  
+  whitneyTransform = {
+  	position: [5*heartScale,heartScale,heartScale],
+	angle: [0,0,0],
+	scale: heartScale/2
+  }
+
+  whitneyLighting = {
+	ambient: 2,
+	//this is negative because I had the triangles backwards
+	lambertian: [-1,-1,-0.8],
+	direction: [0.218217890236,-0.872871560944,0.436435780472],
+  };
+  
+  var vertices_L = [[-3,2,4],[-1,2,4],[-1,2,-2],[3,2,-2],[3,2,-4],[-3,2,-4],
+		    [-3,-2,4],[-1,-2,4],[-1,-2,-2],[3,-2,-2],[3,-2,-4],[-3,-2,-4]]
+  var triCon_L = [
+		[2,1,0],[5,2,0],[5,4,2],[4,3,2],
+		[8,6,7],[11,6,8],[11,8,10],[10,8,9],
+		[0,1,6],[1,7,6],[2,8,1],[8,7,1],[2,3,9],[9,8,2],[10,9,3],[10,3,4],[10,4,5],[10,5,11],[11,5,6],[5,0,6]
+	];
+
+
+  LUKE = getTrianglesFromMesh(vertices_L,triCon_L);
+  
+  lukeTransform = {
+  	position: [-4*heartScale,heartScale,heartScale],
+	angle: [0,0,0],
+	scale: heartScale/2
+  }
+
+  lukeLighting = {
+	ambient: 2,
+	//this is negative because I had the triangles backwards
+	lambertian: [-1,-1,-0.8],
+	direction: [0.218217890236,-0.872871560944,0.436435780472],
+  };
+
+  
+
+  //add the connections on the side
+
   twoSpheresTest();
   
 }
@@ -73,7 +153,17 @@ function endAnimation(){
   clearInterval(animationID);
 }
 
-
+function getTrianglesFromMesh(vertices,triCon){
+	var triangles = [];
+	
+	//add the vertices of each triangle to the list of triangles
+	for(var i=0;i<triCon.length;i++){
+		triangles.push([vertices[triCon[i][0]],vertices[triCon[i][1]],vertices[triCon[i][2]]]);
+	}
+	
+	return triangles
+	
+}
  
 
 function twoSpheresTest(){
@@ -82,16 +172,20 @@ function twoSpheresTest(){
   frame = ctx.getImageData(0,0,WIDTH,HEIGHT); 
   
   
-  var r = 150;
-  var g = 50;
-  var b = 100;
-  
   clearFrame();
   
   
 	
   for(var i=0;i<HEART.length;i++){
-      addTriangle(HEART[i], heartTransform,[r,g,b],heartLighting)
+      addTriangle(HEART[i], heartTransform,[150,50,100],heartLighting)
+  }
+
+  for(var i=0;i<LUKE.length;i++){
+      addTriangle(LUKE[i], lukeTransform,[25,100,100],lukeLighting)
+  }
+
+  for(var i=0;i<WHITNEY.length;i++){
+      addTriangle(WHITNEY[i], whitneyTransform,[100,100,25],whitneyLighting)
   }
   
 
@@ -101,8 +195,18 @@ function twoSpheresTest(){
   //heartAngle[1]+=0.1;
   
   heartTransform.angle[2]+=0.1;
-  heartTransform.position[0] = 2*heartTransform.scale*Math.sin(heartTransform.angle[2]);
-  heartTransform.scale = heartScale*(3+Math.cos(heartTransform.angle[2]/3))/4;
+  heartTransform.position[2] = 2*heartTransform.scale*Math.sin(heartTransform.angle[2]);
+  //heartTransform.scale = heartScale*(3+Math.cos(heartTransform.angle[2]/3))/4;
+
+  whitneyTransform.angle[2]+=0.1;
+  whitneyTransform.position[2] = heartScale + 2*heartTransform.scale*Math.sin(whitneyTransform.angle[2]);
+  //whitneyTransform.scale = heartScale*(3+Math.cos(whitneyTransform.angle[2]/3))/8
+
+  lukeTransform.angle[2]+=0.1;
+  lukeTransform.position[2] = heartScale + 2*heartTransform.scale*Math.sin(lukeTransform.angle[2]);
+  //lukeTransform.scale = heartScale*(3+Math.cos(lukeTransform.angle[2]/3))/8;
+
+  
 
 }
 
@@ -497,7 +601,7 @@ var triCopy= triangle.slice()
 		x = triPixels[i][0]
 		y = triPixels[i][1]
 		//check if the location is in the bounds of the screen
-		if(0<=x && x<=WIDTH && 0<=y && y<= HEIGHT){
+		if(0<=x && x< WIDTH && 0<=y && y< HEIGHT){
 			x1 = triCopy[0][0];y1 = triCopy[0][1];z1 = triCopy[0][2];
             x2 = triCopy[1][0];y2 = triCopy[1][1];z2 = triCopy[1][2];
             x3 = triCopy[2][0];y3 = triCopy[2][1];z3 = triCopy[2][2];
@@ -512,6 +616,7 @@ var triCopy= triangle.slice()
 			if(l1*z1 + l2*z2 + l3*z3 < zBuffer[y][x]){
 				
 				
+
 
 				//update zbuffer
 				zBuffer[y][x] = l1*z1 + l2*z2 + l3*z3;
